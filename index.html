@@ -301,14 +301,38 @@ function render() {
 
   // ═══ CASHOUT ═══
   if (view === 'cashout' && a) {
+    const dTip = a.dealerTip || 0;
+    const rk = a.rake || 0;
+    const totalOut = tblOut + dTip + rk;
+    const left = tblMoney - totalOut;
+
     html += `<div class="page-title"><span style="color:var(--gold)">♦</span> Cashout & Settle</div>`;
-    const left = tblMoney - tblOut;
     html += `<div class="summary-bar" id="co-summary">
       <div class="summary-item"><div class="lbl">TABLE</div><div class="val" style="color:var(--gold)">$${tblMoney.toLocaleString()}</div></div>
       <div class="divider"></div>
-      <div class="summary-item"><div class="lbl">PAID OUT</div><div class="val" style="color:${tblOut > 0 ? '#86efac' : 'var(--dim)'}">$${tblOut.toLocaleString()}</div></div>
+      <div class="summary-item"><div class="lbl">PAID OUT</div><div class="val" style="color:${totalOut > 0 ? '#86efac' : 'var(--dim)'}">$${totalOut.toLocaleString()}</div></div>
       <div class="divider"></div>
-      <div class="summary-item"><div class="lbl">LEFT</div><div class="val" style="color:${left > 0 ? '#fbbf24' : 'var(--green)'}">$${left.toLocaleString()}</div></div>
+      <div class="summary-item"><div class="lbl">LEFT</div><div class="val" style="color:${left > 0 ? '#fbbf24' : left === 0 ? 'var(--green)' : 'var(--red)'}">$${left.toLocaleString()}</div></div>
+    </div>`;
+
+    // Dealer Tip & Rake
+    html += `<div class="card" style="padding:16px;margin-bottom:12px">
+      <div style="display:flex;gap:12px">
+        <div style="flex:1">
+          <label style="font-size:10px;color:var(--orange);letter-spacing:1px;font-family:'Courier New',monospace;display:block;margin-bottom:6px">🎰 DEALER TIP</label>
+          <div style="position:relative">
+            <span style="position:absolute;left:12px;top:12px;color:#555;font-size:13px;font-family:'Courier New',monospace;pointer-events:none">$</span>
+            <input type="number" inputmode="numeric" placeholder="0" style="padding-left:26px;font-size:16px;font-weight:600;color:var(--orange)" value="${dTip || ''}" oninput="setDealerRake('dealerTip',this.value)">
+          </div>
+        </div>
+        <div style="flex:1">
+          <label style="font-size:10px;color:var(--red);letter-spacing:1px;font-family:'Courier New',monospace;display:block;margin-bottom:6px">🏦 RAKE</label>
+          <div style="position:relative">
+            <span style="position:absolute;left:12px;top:12px;color:#555;font-size:13px;font-family:'Courier New',monospace;pointer-events:none">$</span>
+            <input type="number" inputmode="numeric" placeholder="0" style="padding-left:26px;font-size:16px;font-weight:600;color:var(--red)" value="${rk || ''}" oninput="setDealerRake('rake',this.value)">
+          </div>
+        </div>
+      </div>
     </div>`;
 
     if (a.entries.length === 0) {
@@ -380,11 +404,19 @@ function render() {
     if (state.sessions.length > 0) {
       html += `<div style="margin-top:28px"><div class="sec-head">All Sessions</div>`;
       state.sessions.slice().reverse().forEach(s => {
+        const dt = s.dealerTip || 0;
+        const rk = s.rake || 0;
         html += `<div class="card"><div style="font-size:12px;color:var(--gold);margin-bottom:8px" class="mono">${new Date(s.date).toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric',year:'numeric'})} <span style="color:var(--dim2);margin-left:8px">$${s.entries.reduce((t, e) => t + e.totalIn, 0)}</span></div>`;
         s.entries.forEach(e => {
           const pnl = (e.cashOut || 0) - e.totalIn;
           html += `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:13px"><span style="color:#888" class="mono">${gn(e.playerId)}</span><span class="${pnlClass(pnl)} mono">${pnlStr(pnl)}</span></div>`;
         });
+        if (dt > 0 || rk > 0) {
+          html += `<div style="display:flex;gap:12px;margin-top:6px;padding-top:6px;border-top:1px solid #1a1e28">`;
+          if (dt > 0) html += `<span style="font-size:11px;color:var(--orange)" class="mono">🎰 Tip: $${dt}</span>`;
+          if (rk > 0) html += `<span style="font-size:11px;color:var(--red)" class="mono">🏦 Rake: $${rk}</span>`;
+          html += `</div>`;
+        }
         html += `</div>`;
       });
       html += `</div>`;
@@ -458,7 +490,7 @@ function deletePlayer(id) {
 }
 
 function startSession() {
-  state.active = { id: Date.now().toString(), date: new Date().toISOString(), entries: [] };
+  state.active = { id: Date.now().toString(), date: new Date().toISOString(), entries: [], dealerTip: 0, rake: 0 };
   saveState(); view = 'buyin'; showToast("Let's deal!"); render();
 }
 
@@ -506,28 +538,39 @@ function renderSettlement(e) {
   return h;
 }
 
+function setDealerRake(field, val) {
+  if (!state.active) return;
+  state.active[field] = val === '' ? 0 : (parseFloat(val) || 0);
+  saveState();
+  updateSummaryBar();
+}
+
+function updateSummaryBar() {
+  const sumDiv = document.getElementById('co-summary');
+  if (!sumDiv || !state.active) return;
+  const tblMoney = state.active.entries.reduce((s, x) => s + x.totalIn, 0);
+  const tblOut = state.active.entries.reduce((s, x) => s + (x.cashOut || 0), 0);
+  const dTip = state.active.dealerTip || 0;
+  const rk = state.active.rake || 0;
+  const totalOut = tblOut + dTip + rk;
+  const left = tblMoney - totalOut;
+  sumDiv.innerHTML = `
+    <div class="summary-item"><div class="lbl">TABLE</div><div class="val" style="color:var(--gold)">$${tblMoney.toLocaleString()}</div></div>
+    <div class="divider"></div>
+    <div class="summary-item"><div class="lbl">PAID OUT</div><div class="val" style="color:${totalOut > 0 ? '#86efac' : 'var(--dim)'}">$${totalOut.toLocaleString()}</div></div>
+    <div class="divider"></div>
+    <div class="summary-item"><div class="lbl">LEFT</div><div class="val" style="color:${left > 0 ? '#fbbf24' : left === 0 ? 'var(--green)' : 'var(--red)'}">$${left.toLocaleString()}</div></div>`;
+}
+
 function setCashOut(pid, val) {
   if (!state.active) return;
   const e = state.active.entries.find(x => x.playerId === pid);
   if (e) {
     e.cashOut = val === '' ? null : (parseFloat(val) || 0);
     saveState();
-    // Update settlement box for this player
     const settleDiv = document.getElementById('settle-' + pid);
     if (settleDiv) settleDiv.innerHTML = renderSettlement(e);
-    // Update summary bar
-    const sumDiv = document.getElementById('co-summary');
-    if (sumDiv) {
-      const tblMoney = state.active.entries.reduce((s, x) => s + x.totalIn, 0);
-      const tblOut = state.active.entries.reduce((s, x) => s + (x.cashOut || 0), 0);
-      const left = tblMoney - tblOut;
-      sumDiv.innerHTML = `
-        <div class="summary-item"><div class="lbl">TABLE</div><div class="val" style="color:var(--gold)">$${tblMoney.toLocaleString()}</div></div>
-        <div class="divider"></div>
-        <div class="summary-item"><div class="lbl">PAID OUT</div><div class="val" style="color:${tblOut > 0 ? '#86efac' : 'var(--dim)'}">$${tblOut.toLocaleString()}</div></div>
-        <div class="divider"></div>
-        <div class="summary-item"><div class="lbl">LEFT</div><div class="val" style="color:${left > 0 ? '#fbbf24' : 'var(--green)'}">$${left.toLocaleString()}</div></div>`;
-    }
+    updateSummaryBar();
   }
 }
 
@@ -564,3 +607,4 @@ render();
 </script>
 </body>
 </html>
+

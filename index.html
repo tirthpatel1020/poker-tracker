@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Poker Home Game</title>
+<style>
+:root{
+  --bg:#08090c;--card:#0d0f14;--border:#161a22;--gold:#c9a227;--gold2:#96780f;
+  --text:#e8e0d4;--dim:#666;--dim2:#444;--green:#4ade80;--red:#f87171;--blue:#60a5fa;--orange:#fb923c;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;height:100%;overflow-x:hidden}
+button{cursor:pointer;font-family:inherit;border:none;background:none;color:inherit}
+input,select,textarea{font-family:'Courier New',monospace;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px 14px;font-size:15px;width:100%;box-sizing:border-box;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+input[type=number]{-moz-appearance:textfield}
+.app{max-width:480px;margin:0 auto;min-height:100vh;position:relative}
+.header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #151820;position:sticky;top:0;z-index:50;background:var(--bg)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--gold),#8b6914);display:flex;align-items:center;justify-content:center;font-size:18px;color:#0a0a0a;font-weight:800}
+.logo-text{font-size:14px;font-weight:800;color:var(--gold);letter-spacing:3px}
+.logo-sub{font-size:9px;color:#555;letter-spacing:4px}
+.live-chip{display:flex;align-items:center;padding:5px 10px;border-radius:100px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);color:var(--green);font-size:10px;font-weight:700;letter-spacing:2px;font-family:'Courier New',monospace}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:6px;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.save-bar{padding:6px 18px;background:#0a0d12;border-bottom:1px solid #111820;display:flex;justify-content:space-between;align-items:center}
+.save-bar span{font-size:10px;color:var(--dim2);font-family:'Courier New',monospace}
+.save-btn{background:none;border:1px solid #1e2830;border-radius:6px;padding:4px 10px;color:var(--gold);font-size:10px;font-weight:600;font-family:'Courier New',monospace;letter-spacing:.5px}
+.content{padding:18px;padding-bottom:90px}
+.table-banner{margin:16px 18px 0;background:linear-gradient(135deg,#161210,#0e1108,#10140e);border:1px solid #252010;border-radius:14px;padding:20px;text-align:center}
+.table-amount{font-size:38px;font-weight:800;color:var(--gold);font-family:'Courier New',monospace;text-shadow:0 0 30px rgba(201,162,39,0.3);margin-top:2px}
+.table-label{font-size:10px;color:#888;letter-spacing:3px;font-family:'Courier New',monospace}
+.table-stats{display:flex;gap:16px;justify-content:center;margin-top:6px}
+.table-stats span{font-size:11px;color:var(--dim);font-family:'Courier New',monospace}
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px}
+.stat-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 10px;text-align:center}
+.stat-num{font-size:20px;font-weight:700;color:var(--gold);font-family:'Courier New',monospace}
+.stat-lbl{font-size:10px;color:#555;letter-spacing:1px;margin-top:2px;font-family:'Courier New',monospace}
+.big-btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:12px;color:#0a0a0a;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 20px rgba(201,162,39,0.2)}
+.big-btn:disabled{opacity:.4}
+.gold-btn{padding:10px 20px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:8px;color:#0a0a0a;font-size:12px;font-weight:700;letter-spacing:1px}
+.end-btn{width:100%;padding:14px;border:1px solid #442222;border-radius:10px;color:var(--red);font-size:13px;font-weight:600;letter-spacing:1px}
+.card{background:var(--card);border:1px solid #151820;border-radius:10px;padding:14px 16px;margin-bottom:8px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--card);border:1px solid #151820;border-radius:10px;margin-bottom:8px}
+.sec-head{font-size:11px;color:#555;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;font-family:'Courier New',monospace}
+.page-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px}
+.form-label{font-size:11px;color:#888;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;display:block;font-family:'Courier New',monospace}
+.form-group{margin-bottom:18px}
+.amt-input-wrap{position:relative}
+.amt-input-wrap .dollar{position:absolute;left:14px;top:18px;color:#555;font-size:16px;font-family:'Courier New',monospace;pointer-events:none}
+.amt-input{padding-left:32px!important;font-size:28px!important;font-weight:700!important;color:var(--gold)!important;padding-top:16px!important;padding-bottom:16px!important}
+.quick-amounts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.quick-amt{padding:8px 14px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--dim);font-size:13px;font-weight:600;font-family:'Courier New',monospace}
+.quick-amt.active{background:rgba(201,162,39,0.15);border-color:var(--gold);color:var(--gold)}
+.method-row{display:flex;gap:8px}
+.method-btn{flex:1;padding:12px 8px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--dim);font-size:12px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px}
+.method-btn.active{background:rgba(201,162,39,0.1);border-color:var(--gold);color:var(--gold)}
+.credit-warn{margin-top:8px;font-size:11px;color:var(--orange);font-family:'Courier New',monospace;padding:8px 12px;background:rgba(251,146,60,0.06);border-radius:6px;border:1px solid rgba(251,146,60,0.12)}
+.tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.5px;font-family:'Courier New',monospace;margin-right:4px;margin-top:4px}
+.tag-cash{background:rgba(74,222,128,0.08);color:var(--green);border:1px solid rgba(74,222,128,0.15)}
+.tag-interac{background:rgba(96,165,250,0.08);color:var(--blue);border:1px solid rgba(96,165,250,0.15)}
+.tag-credit{background:rgba(251,146,60,0.08);color:var(--orange);border:1px solid rgba(251,146,60,0.15)}
+.name{font-size:15px;font-weight:600;color:var(--text)}
+.pnl-pos{color:var(--green);font-weight:700;font-family:'Courier New',monospace}
+.pnl-neg{color:var(--red);font-weight:700;font-family:'Courier New',monospace}
+.pnl-zero{color:var(--dim);font-weight:700;font-family:'Courier New',monospace}
+.summary-bar{display:flex;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 8px;margin-bottom:20px;gap:4px}
+.summary-item{flex:1;text-align:center;font-family:'Courier New',monospace}
+.summary-item .lbl{font-size:10px;color:#888;letter-spacing:1px}
+.summary-item .val{font-size:20px;font-weight:700}
+.divider{width:1px;background:#222}
+.settle-box{margin-top:12px;padding:12px 14px;border-radius:8px}
+.settle-owe{background:rgba(251,146,60,0.05);border:1px solid rgba(251,146,60,0.15)}
+.settle-owed{background:rgba(74,222,128,0.05);border:1px solid rgba(74,222,128,0.15)}
+.settle-even{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05)}
+.nav-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.nav-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.nav-card .icon{font-size:24px}
+.nav-card .label{font-size:14px;font-weight:700}
+.nav-card .sub{font-size:11px;color:#555;font-family:'Courier New',monospace}
+.rank{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-family:'Courier New',monospace;flex-shrink:0}
+.rank-1{background:rgba(201,162,39,0.15);color:var(--gold);border:1px solid rgba(201,162,39,0.25);font-size:16px}
+.rank-2{background:rgba(192,192,192,0.1);color:#c0c0c0;border:1px solid rgba(192,192,192,0.15);font-size:14px}
+.rank-3{background:rgba(205,127,50,0.1);color:#cd7f32;border:1px solid rgba(205,127,50,0.15);font-size:14px}
+.rank-n{background:rgba(255,255,255,0.03);color:#444;border:1px solid #1a1a1a;font-size:14px}
+.leader-row{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-radius:10px;margin-bottom:8px;cursor:pointer;background:var(--card);border:1px solid #151820}
+.leader-row.first{background:linear-gradient(135deg,rgba(201,162,39,0.06),rgba(201,162,39,0.02));border-color:rgba(201,162,39,0.15)}
+.detail-card{background:linear-gradient(145deg,#131008,#0d0f14);border:1px solid #252010;border-radius:12px;padding:20px;margin-bottom:10px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.detail-grid .lbl{font-size:10px;color:#555;letter-spacing:1px;font-family:'Courier New',monospace}
+.detail-grid .val{font-size:16px;font-weight:700;font-family:'Courier New',monospace;margin-top:2px}
+.del-btn{width:28px;height:28px;border-radius:6px;border:1px solid #2a1515;color:#c44;font-size:12px;display:flex;align-items:center;justify-content:center}
+.cashout-row{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px}
+.cashout-input{display:flex;align-items:center;gap:10px;margin-top:14px}
+.cashout-input label{font-size:12px;color:var(--dim);letter-spacing:1px;font-family:'Courier New',monospace;flex-shrink:0}
+.cashout-input .wrap{position:relative;flex:1}
+.cashout-input .wrap .dollar{position:absolute;left:14px;top:13px;color:#555;font-size:14px;font-family:'Courier New',monospace;pointer-events:none}
+.cashout-input input{padding-left:28px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;justify-content:center;z-index:100;padding:20px}
+.modal{background:#12151c;border:1px solid #1e2230;border-radius:16px 16px 10px 10px;padding:24px;width:100%;max-width:440px;margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;margin-top:16px}
+.modal-cancel{flex:1;padding:10px;background:transparent;border:1px solid #222;border-radius:8px;color:#888;font-size:13px}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;justify-content:space-around;background:linear-gradient(180deg,rgba(8,9,12,0.95),#08090c);border-top:1px solid #151820;padding:8px 4px;padding-bottom:max(8px,env(safe-area-inset-bottom));z-index:50;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+.nav-tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px;border-radius:8px;min-width:46px}
+.nav-tab .icon{font-size:18px}
+.nav-tab .lbl{font-size:9px;font-weight:500;color:var(--dim2);letter-spacing:.5px;font-family:'Courier New',monospace}
+.nav-tab.active .lbl{font-weight:700;color:var(--gold)}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);padding:10px 24px;border-radius:100px;z-index:999;font-size:13px;font-family:'Courier New',monospace;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:fadeUp .25s ease;max-width:90%;text-align:center}
+.toast-ok{background:#1a2a11;border:1px solid #2a4a1a;color:var(--green)}
+.toast-err{background:#3a1111;border:1px solid #662222;color:var(--red)}
+.hidden{display:none!important}
+.mono{font-family:'Courier New',monospace}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let state = { players: [], sessions: [], active: null };
+let view = 'home';
+let selectedLP = null;
+let toastTimer = null;
+
+// ═══════════════════════════════════════
+// STORAGE: localStorage + URL hash
+// ═══════════════════════════════════════
+const compress = (obj) => { try { return btoa(unescape(encodeURIComponent(JSON.stringify(obj)))) } catch(e) { return '' } };
+const decompress = (s) => { try { return JSON.parse(decodeURIComponent(escape(atob(s)))) } catch(e) { return null } };
+
+function saveState() {
+  const json = JSON.stringify(state);
+  try { localStorage.setItem('pk', json) } catch(e) {}
+  const h = compress(state);
+  if (h) history.replaceState(null, '', '#' + h);
+}
+
+function loadState() {
+  // URL hash first
+  const h = location.hash.slice(1);
+  if (h) { const d = decompress(h); if (d && d.players) { state = d; return } }
+  // localStorage
+  try { const ls = localStorage.getItem('pk'); if (ls) { const d = JSON.parse(ls); if (d && d.players) { state = d; return } } } catch(e) {}
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+const gn = (id) => (state.players.find(p => p.id === id) || {}).name || 'Unknown';
+const pnlClass = (v) => v > 0 ? 'pnl-pos' : v < 0 ? 'pnl-neg' : 'pnl-zero';
+const pnlStr = (v) => (v >= 0 ? '+' : '') + '$' + v;
+const tagClass = (m) => 'tag tag-' + m;
+
+function getSettlement(entry) {
+  if (entry.cashOut === null || entry.cashOut === undefined) return null;
+  const cr = entry.buyIns.filter(b => b.method === 'credit').reduce((s, b) => s + b.amount, 0);
+  return { pnl: entry.cashOut - entry.totalIn, netOwed: cr - entry.cashOut, creditIn: cr };
+}
+
+function getStats(pid) {
+  let tp=0,c=0,w=0,l=0,cb=0,ib=0,crb=0,bw=0,bl=0;
+  state.sessions.forEach(s => {
+    const e = s.entries.find(x => x.playerId === pid);
+    if (e && e.cashOut !== null && e.cashOut !== undefined) {
+      c++; const pnl = e.cashOut - e.totalIn; tp += pnl;
+      if (pnl > 0) w++; if (pnl < 0) l++;
+      if (pnl > bw) bw = pnl; if (pnl < bl) bl = pnl;
+      e.buyIns.forEach(b => { if (b.method==='cash') cb+=b.amount; if (b.method==='interac') ib+=b.amount; if (b.method==='credit') crb+=b.amount });
+    }
+  });
+  return {tp,c,w,l,cb,ib,crb,bw,bl};
+}
+
+function showToast(msg, type) {
+  if (toastTimer) clearTimeout(toastTimer);
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + (type === 'error' ? 'toast-err' : 'toast-ok');
+  el.classList.remove('hidden');
+  toastTimer = setTimeout(() => el.classList.add('hidden'), 2200);
+}
+
+function shareURL() {
+  const url = location.href;
+  if (navigator.share) {
+    navigator.share({ title: 'Poker Tracker', url }).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => showToast('URL copied!')).catch(() => showToast('Copy URL from address bar', 'error'));
+  } else {
+    prompt('Copy this URL:', url);
+  }
+}
+
+// ═══════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════
+function render() {
+  const app = document.getElementById('app');
+  const a = state.active;
+  const tblMoney = a ? a.entries.reduce((s, e) => s + e.totalIn, 0) : 0;
+  const tblOut = a ? a.entries.reduce((s, e) => s + (e.cashOut || 0), 0) : 0;
+
+  let html = `<div id="toast" class="toast hidden"></div>`;
+
+  // Header
+  html += `<div class="header">
+    <div class="logo">
+      <div class="logo-icon">♠</div>
+      <div><div class="logo-text">HOME GAME</div><div class="logo-sub">TRACKER</div></div>
+    </div>
+    ${a ? '<div class="live-chip"><span class="live-dot"></span>LIVE</div>' : ''}
+  </div>`;
+
+  // Save bar
+  html += `<div class="save-bar"><span>Data auto-saves to URL</span><button class="save-btn" onclick="shareURL()">SHARE / SAVE URL</button></div>`;
+
+  // Table banner
+  if (a) {
+    const buyInCount = a.entries.reduce((s, e) => s + e.buyIns.length, 0);
+    html += `<div class="table-banner">
+      <div class="table-label">ON THE TABLE</div>
+      <div class="table-amount">$${tblMoney.toLocaleString()}</div>
+      <div class="table-stats"><span>${a.entries.length} players</span><span>${buyInCount} buy-ins</span></div>
+    </div>`;
+  }
+
+  html += `<div class="content">`;
+
+  // ═══ HOME ═══
+  if (view === 'home') {
+    if (!a) {
+      const vol = state.sessions.reduce((s, ss) => s + ss.entries.reduce((s2, e) => s2 + e.totalIn, 0), 0);
+      html += `<div class="stats-row">
+        <div class="stat-box"><div class="stat-num">${state.players.length}</div><div class="stat-lbl">Players</div></div>
+        <div class="stat-box"><div class="stat-num">${state.sessions.length}</div><div class="stat-lbl">Sessions</div></div>
+        <div class="stat-box"><div class="stat-num">$${vol.toLocaleString()}</div><div class="stat-lbl">Volume</div></div>
+      </div>`;
+      html += `<button class="big-btn" onclick="startSession()" ${state.players.length < 2 ? 'disabled' : ''}><span style="font-size:20px">♦</span><span>Start New Session</span></button>`;
+      if (state.players.length < 2) html += `<div style="color:#555;font-size:12px;text-align:center;margin-top:8px" class="mono">Need at least 2 players</div>`;
+
+      if (state.sessions.length > 0) {
+        html += `<div style="margin-top:24px"><div class="sec-head">Recent Sessions</div>`;
+        state.sessions.slice(-3).reverse().forEach(s => {
+          html += `<div class="card"><div style="font-size:12px;color:var(--gold)" class="mono">${new Date(s.date).toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'})}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">`;
+          s.entries.forEach(e => {
+            const pnl = (e.cashOut||0) - e.totalIn;
+            html += `<span style="font-size:12px" class="${pnlClass(pnl)} mono">${gn(e.playerId)} ${pnlStr(pnl)}</span>`;
+          });
+          html += `</div></div>`;
+        });
+        html += `</div>`;
+      }
+    } else {
+      html += `<div class="nav-grid">
+        <button class="nav-card" onclick="go('buyin')"><span class="icon">💰</span><span class="label">Buy-In</span><span class="sub">Register buy-ins</span></button>
+        <button class="nav-card" onclick="go('cashout')"><span class="icon">💵</span><span class="label">Cashout</span><span class="sub">End & settle</span></button>
+      </div>`;
+      if (a.entries.length > 0) {
+        html += `<div style="margin-top:20px"><div class="sec-head">At The Table</div>`;
+        a.entries.forEach(e => {
+          html += `<div class="row"><div><div class="name">${gn(e.playerId)}</div><div>${e.buyIns.map(b => `<span class="${tagClass(b.method)}">${b.method} $${b.amount}</span>`).join('')}</div></div>
+          <div style="text-align:right"><div style="font-size:18px;font-weight:700;color:var(--gold)" class="mono">$${e.totalIn}</div>${e.cashOut !== null ? `<div style="font-size:11px;color:var(--dim)" class="mono">out: $${e.cashOut}</div>` : ''}</div></div>`;
+        });
+        html += `</div>`;
+      }
+      html += `<button class="end-btn" style="margin-top:24px" onclick="endSession()">✕ End Session & Save</button>`;
+    }
+  }
+
+  // ═══ BUY-IN ═══
+  if (view === 'buyin' && a) {
+    html += `<div class="page-title"><span style="color:var(--gold)">♣</span> Register Buy-In</div>`;
+    html += `<div class="form-group"><label class="form-label">Player</label><select id="bi-player"><option value="">Select player...</option>`;
+    state.players.forEach(p => { html += `<option value="${p.id}">${p.name}</option>` });
+    html += `</select></div>`;
+    html += `<div class="form-group"><label class="form-label">Amount</label><div class="amt-input-wrap"><span class="dollar">$</span><input id="bi-amount" class="amt-input" type="number" inputmode="numeric" placeholder="0"></div>`;
+    html += `<div class="quick-amounts">${[50,100,200,300,500].map(v => `<button class="quick-amt" onclick="document.getElementById('bi-amount').value=${v};this.parentNode.querySelectorAll('.quick-amt').forEach(b=>b.classList.remove('active'));this.classList.add('active')">$${v}</button>`).join('')}</div></div>`;
+    html += `<div class="form-group"><label class="form-label">Payment Method</label><div class="method-row" id="bi-method">
+      <button class="method-btn active" data-m="cash" onclick="pickMethod(this)"><span>💵</span><span>Cash</span></button>
+      <button class="method-btn" data-m="interac" onclick="pickMethod(this)"><span>📱</span><span>Interac</span></button>
+      <button class="method-btn" data-m="credit" onclick="pickMethod(this)"><span>📝</span><span>Credit</span></button>
+    </div><div id="credit-warn" class="credit-warn hidden">⚠ Credit = you're fronting this. Player owes you.</div></div>`;
+    html += `<button class="big-btn" onclick="addBuyIn()">Confirm Buy-In</button>`;
+
+    if (a.entries.length > 0) {
+      html += `<div style="margin-top:28px"><div class="sec-head">Session Buy-Ins</div>`;
+      a.entries.forEach(e => {
+        html += `<div class="row"><div><div class="name" style="font-size:14px">${gn(e.playerId)}</div><div>${e.buyIns.map(b => `<span class="${tagClass(b.method)}">${b.method} $${b.amount}</span>`).join('')}</div></div>
+        <div style="font-size:18px;font-weight:700;color:var(--gold)" class="mono">$${e.totalIn}</div></div>`;
+      });
+      html += `</div>`;
+    }
+  }
+
+  // ═══ CASHOUT ═══
+  if (view === 'cashout' && a) {
+    html += `<div class="page-title"><span style="color:var(--gold)">♦</span> Cashout & Settle</div>`;
+    const left = tblMoney - tblOut;
+    html += `<div class="summary-bar">
+      <div class="summary-item"><div class="lbl">TABLE</div><div class="val" style="color:var(--gold)">$${tblMoney.toLocaleString()}</div></div>
+      <div class="divider"></div>
+      <div class="summary-item"><div class="lbl">PAID OUT</div><div class="val" style="color:${tblOut > 0 ? '#86efac' : 'var(--dim)'}">$${tblOut.toLocaleString()}</div></div>
+      <div class="divider"></div>
+      <div class="summary-item"><div class="lbl">LEFT</div><div class="val" style="color:${left > 0 ? '#fbbf24' : 'var(--green)'}">$${left.toLocaleString()}</div></div>
+    </div>`;
+
+    if (a.entries.length === 0) {
+      html += `<div style="color:var(--dim2);text-align:center;padding:40px 0;font-size:13px" class="mono">No players yet. Go to Buy-In first.</div>`;
+    } else {
+      a.entries.forEach((e, i) => {
+        const stl = getSettlement(e);
+        html += `<div class="cashout-row"><div style="display:flex;justify-content:space-between;align-items:center">
+          <div><div class="name" style="font-size:16px;font-weight:700">${gn(e.playerId)}</div><div>${e.buyIns.map(b => `<span class="${tagClass(b.method)}">${b.method} $${b.amount}</span>`).join('')}</div></div>
+          <div style="font-size:13px;color:#888" class="mono">In: $${e.totalIn}</div>
+        </div>`;
+        html += `<div class="cashout-input"><label>CASHOUT</label><div class="wrap"><span class="dollar">$</span><input type="number" inputmode="numeric" placeholder="0" value="${e.cashOut !== null && e.cashOut !== undefined ? e.cashOut : ''}" onchange="setCashOut('${e.playerId}',this.value)" oninput="setCashOut('${e.playerId}',this.value)"></div></div>`;
+
+        if (stl) {
+          const cls = stl.netOwed > 0 ? 'settle-owe' : stl.netOwed < 0 ? 'settle-owed' : 'settle-even';
+          html += `<div class="settle-box ${cls}">`;
+          html += `<div style="font-size:12px;color:#888" class="mono">P&L: <span class="${pnlClass(stl.pnl)}">${pnlStr(stl.pnl)}</span></div>`;
+          html += `<div style="font-size:14px;font-weight:600;margin-top:6px">`;
+          if (stl.netOwed > 0) html += `<span style="color:var(--orange)">🔸 ${gn(e.playerId)} owes you $${stl.netOwed.toFixed(0)}</span>`;
+          else if (stl.netOwed < 0) html += `<span style="color:var(--green)">🔹 You owe ${gn(e.playerId)} $${Math.abs(stl.netOwed).toFixed(0)}</span>`;
+          else html += `<span style="color:#888">✓ All settled</span>`;
+          html += `</div>`;
+          if (stl.creditIn > 0) html += `<div style="font-size:11px;color:#777;margin-top:4px" class="mono">(credit: $${stl.creditIn})</div>`;
+          html += `</div>`;
+        }
+        html += `</div>`;
+      });
+    }
+    html += `<button class="end-btn" style="margin-top:20px" onclick="endSession()">✕ End Session & Save All</button>`;
+  }
+
+  // ═══ PLAYERS ═══
+  if (view === 'players') {
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><div class="page-title" style="margin-bottom:0">♠ Players</div><button class="gold-btn" onclick="showModal()">+ Add</button></div>`;
+    if (state.players.length === 0) {
+      html += `<div style="color:var(--dim2);text-align:center;padding:50px 0;font-size:13px" class="mono">No players yet</div>`;
+    } else {
+      state.players.forEach(p => {
+        const st = getStats(p.id);
+        html += `<div class="row"><div style="flex:1"><div class="name" style="font-size:16px">${p.name}</div><div style="font-size:12px;color:#555;margin-top:2px" class="mono">${st.c} sessions · ${st.w}W ${st.l}L</div></div>
+        <div style="display:flex;align-items:center;gap:12px"><span style="font-size:17px" class="${pnlClass(st.tp)} mono">${pnlStr(st.tp)}</span><button class="del-btn" onclick="deletePlayer('${p.id}')">✕</button></div></div>`;
+      });
+    }
+  }
+
+  // ═══ LEADERBOARD ═══
+  if (view === 'leaderboard') {
+    const lb = state.players.map(p => ({...p, stats: getStats(p.id)})).filter(p => p.stats.c > 0).sort((a, b) => b.stats.tp - a.stats.tp);
+    html += `<div class="page-title">♛ All-Time Leaderboard</div>`;
+    if (lb.length === 0) {
+      html += `<div style="color:var(--dim2);text-align:center;padding:50px 0;font-size:13px" class="mono">Play some sessions first</div>`;
+    } else {
+      lb.forEach((p, i) => {
+        const rc = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-n';
+        html += `<div class="leader-row ${i === 0 ? 'first' : ''}" onclick="toggleLP('${p.id}')">
+          <div style="display:flex;align-items:center;gap:12px"><div class="rank ${rc}">${i === 0 ? '👑' : (i + 1)}</div>
+          <div><div class="name">${p.name}</div><div style="font-size:11px;color:#555" class="mono">${p.stats.c} sessions · ${p.stats.w}W ${p.stats.l}L</div></div></div>
+          <div style="text-align:right"><div style="font-size:18px" class="${pnlClass(p.stats.tp)} mono">${pnlStr(p.stats.tp)}</div><div style="font-size:10px;color:var(--dim2);letter-spacing:1px" class="mono">LIFETIME</div></div>
+        </div>`;
+      });
+
+      if (selectedLP) {
+        const p = lb.find(x => x.id === selectedLP);
+        if (p) {
+          const s = p.stats;
+          const avg = s.c > 0 ? (s.tp / s.c) : 0;
+          const wr = s.c > 0 ? ((s.w / s.c) * 100).toFixed(0) : 0;
+          html += `<div class="detail-card"><div style="font-size:14px;font-weight:600;color:var(--gold);margin-bottom:16px">${p.name} — Details</div><div class="detail-grid">
+            <div><div class="lbl">BIGGEST WIN</div><div class="val" style="color:var(--green)">+$${s.bw}</div></div>
+            <div><div class="lbl">BIGGEST LOSS</div><div class="val" style="color:var(--red)">$${s.bl}</div></div>
+            <div><div class="lbl">AVG P&L</div><div class="val" style="color:${avg >= 0 ? 'var(--green)' : 'var(--red)'}">${avg >= 0 ? '+' : ''}$${avg.toFixed(0)}</div></div>
+            <div><div class="lbl">WIN RATE</div><div class="val" style="color:var(--gold)">${wr}%</div></div>
+            <div><div class="lbl">CASH</div><div class="val" style="color:var(--green)">$${s.cb}</div></div>
+            <div><div class="lbl">INTERAC</div><div class="val" style="color:var(--blue)">$${s.ib}</div></div>
+            <div><div class="lbl">CREDIT</div><div class="val" style="color:var(--orange)">$${s.crb}</div></div>
+            <div><div class="lbl">TOTAL VOL</div><div class="val" style="color:var(--gold)">$${s.cb + s.ib + s.crb}</div></div>
+          </div></div>`;
+        }
+      }
+    }
+
+    if (state.sessions.length > 0) {
+      html += `<div style="margin-top:28px"><div class="sec-head">All Sessions</div>`;
+      state.sessions.slice().reverse().forEach(s => {
+        html += `<div class="card"><div style="font-size:12px;color:var(--gold);margin-bottom:8px" class="mono">${new Date(s.date).toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric',year:'numeric'})} <span style="color:var(--dim2);margin-left:8px">$${s.entries.reduce((t, e) => t + e.totalIn, 0)}</span></div>`;
+        s.entries.forEach(e => {
+          const pnl = (e.cashOut || 0) - e.totalIn;
+          html += `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:13px"><span style="color:#888" class="mono">${gn(e.playerId)}</span><span class="${pnlClass(pnl)} mono">${pnlStr(pnl)}</span></div>`;
+        });
+        html += `</div>`;
+      });
+      html += `</div>`;
+    }
+  }
+
+  // ═══ BACKUP ═══
+  if (view === 'backup') {
+    const json = JSON.stringify(state, null, 2);
+    html += `<div class="page-title">💾 Backup & Restore</div>`;
+    html += `<div class="card" style="padding:20px"><div class="sec-head">How it works</div><p style="font-size:12px;color:#888;line-height:1.6" class="mono">Your data auto-saves into the URL. Tap "SHARE / SAVE URL" and bookmark it or message it to yourself. That URL has ALL your data.</p></div>`;
+    html += `<button class="big-btn" style="margin:12px 0 16px" onclick="shareURL()">📤 Share / Copy URL</button>`;
+    html += `<div class="card" style="padding:20px"><div class="sec-head">Export JSON</div><textarea id="export-box" style="height:80px;resize:none;font-size:10px;color:var(--gold)" readonly onclick="this.select()">${json.replace(/</g,'&lt;')}</textarea><button class="gold-btn" style="width:100%;margin-top:8px" onclick="navigator.clipboard?navigator.clipboard.writeText(document.getElementById('export-box').value).then(()=>showToast('Copied!')):document.getElementById('export-box').select()">Copy JSON</button></div>`;
+    html += `<div class="card" style="padding:20px;margin-top:8px"><div class="sec-head">Restore from JSON</div><textarea id="import-box" style="height:80px;resize:none;font-size:10px" placeholder="Paste backup JSON here..."></textarea><button class="gold-btn" style="width:100%;margin-top:8px" onclick="doImport()">Restore Data</button></div>`;
+  }
+
+  html += `</div>`; // end content
+
+  // Bottom nav
+  const tabs = [{k:'home',ic:'🏠',l:'Home'}];
+  if (a) { tabs.push({k:'buyin',ic:'💰',l:'Buy-In'}); tabs.push({k:'cashout',ic:'💵',l:'Cashout'}) }
+  tabs.push({k:'players',ic:'♠',l:'Players'});
+  tabs.push({k:'leaderboard',ic:'🏆',l:'Board'});
+  tabs.push({k:'backup',ic:'💾',l:'Backup'});
+
+  html += `<div class="bottom-nav">`;
+  tabs.forEach(t => {
+    html += `<button class="nav-tab ${view === t.k ? 'active' : ''}" onclick="go('${t.k}')"><span class="icon">${t.ic}</span><span class="lbl">${t.l}</span></button>`;
+  });
+  html += `</div>`;
+
+  app.innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════
+function go(v) { view = v; selectedLP = null; render(); window.scrollTo(0, 0); }
+function toggleLP(id) { selectedLP = selectedLP === id ? null : id; render(); }
+
+function showModal() {
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.onclick = (e) => { if (e.target === bg) bg.remove() };
+  bg.innerHTML = `<div class="modal"><div class="page-title" style="font-size:16px;margin-bottom:16px">♣ New Player</div><input id="new-player-name" placeholder="Player name..." autofocus><div class="modal-actions"><button class="modal-cancel" onclick="this.closest('.modal-bg').remove()">Cancel</button><button class="gold-btn" style="flex:1" onclick="addPlayer()">Add Player</button></div></div>`;
+  document.body.appendChild(bg);
+  setTimeout(() => {
+    const inp = document.getElementById('new-player-name');
+    if (inp) { inp.focus(); inp.addEventListener('keydown', e => { if (e.key === 'Enter') addPlayer() }) }
+  }, 100);
+}
+
+function addPlayer() {
+  const inp = document.getElementById('new-player-name');
+  if (!inp) return;
+  const name = inp.value.trim();
+  if (!name) return;
+  if (state.players.some(p => p.name.toLowerCase() === name.toLowerCase())) { showToast('Already exists', 'error'); return }
+  state.players.push({ id: Date.now().toString(), name });
+  saveState();
+  const bg = document.querySelector('.modal-bg');
+  if (bg) bg.remove();
+  showToast(name + ' added');
+  render();
+}
+
+function deletePlayer(id) {
+  if (!confirm('Delete ' + gn(id) + '?')) return;
+  state.players = state.players.filter(p => p.id !== id);
+  saveState(); render();
+}
+
+function startSession() {
+  state.active = { id: Date.now().toString(), date: new Date().toISOString(), entries: [] };
+  saveState(); view = 'buyin'; showToast("Let's deal!"); render();
+}
+
+function pickMethod(btn) {
+  btn.parentNode.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const warn = document.getElementById('credit-warn');
+  if (warn) warn.classList.toggle('hidden', btn.dataset.m !== 'credit');
+}
+
+function addBuyIn() {
+  const pid = document.getElementById('bi-player').value;
+  const amt = parseFloat(document.getElementById('bi-amount').value);
+  const methodBtn = document.querySelector('#bi-method .method-btn.active');
+  const method = methodBtn ? methodBtn.dataset.m : 'cash';
+  if (!pid || !amt || isNaN(amt) || amt <= 0) return;
+
+  const a = state.active;
+  const bi = { amount: amt, method, time: new Date().toISOString() };
+  const idx = a.entries.findIndex(e => e.playerId === pid);
+  if (idx >= 0) {
+    a.entries[idx].buyIns.push(bi);
+    a.entries[idx].totalIn += amt;
+  } else {
+    a.entries.push({ playerId: pid, buyIns: [bi], totalIn: amt, cashOut: null });
+  }
+  saveState();
+  showToast('$' + amt + ' ' + method + ' — ' + gn(pid));
+  render();
+}
+
+function setCashOut(pid, val) {
+  if (!state.active) return;
+  const e = state.active.entries.find(x => x.playerId === pid);
+  if (e) { e.cashOut = parseFloat(val) || 0; saveState(); }
+  // Don't re-render here to keep focus on input — just save
+}
+
+function endSession() {
+  if (!state.active) return;
+  const uf = state.active.entries.filter(e => e.cashOut === null || e.cashOut === undefined);
+  if (uf.length > 0) {
+    if (!confirm(uf.length + ' player(s) no cashout. End anyway?')) return;
+    uf.forEach(e => e.cashOut = 0);
+  }
+  state.sessions.push({...state.active});
+  state.active = null;
+  saveState(); view = 'home'; showToast('Session saved ✓'); render();
+}
+
+function doImport() {
+  const box = document.getElementById('import-box');
+  if (!box || !box.value.trim()) return;
+  try {
+    const d = JSON.parse(box.value);
+    if (d.players) state.players = d.players;
+    if (d.sessions) state.sessions = d.sessions;
+    if (d.active !== undefined) state.active = d.active;
+    if (d.activeSession !== undefined) state.active = d.activeSession;
+    saveState(); showToast('Data restored ✓'); render();
+  } catch(e) { showToast('Invalid JSON', 'error') }
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+loadState();
+render();
+</script>
+</body>
+</html>

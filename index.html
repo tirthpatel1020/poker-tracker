@@ -236,11 +236,12 @@ function render() {
   // ═══ HOME ═══
   if (view === 'home') {
     if (!a) {
-      const vol = state.sessions.reduce((s, ss) => s + ss.entries.reduce((s2, e) => s2 + e.totalIn, 0), 0);
+      const lastSess = state.sessions.length > 0 ? state.sessions[state.sessions.length - 1] : null;
+      const lastVol = lastSess ? lastSess.entries.reduce((s2, e) => s2 + e.totalIn, 0) : 0;
       html += `<div class="stats-row">
         <div class="stat-box"><div class="stat-num">${state.players.length}</div><div class="stat-lbl">Players</div></div>
         <div class="stat-box"><div class="stat-num">${state.sessions.length}</div><div class="stat-lbl">Sessions</div></div>
-        <div class="stat-box"><div class="stat-num">$${vol.toLocaleString()}</div><div class="stat-lbl">Volume</div></div>
+        <div class="stat-box"><div class="stat-num">$${lastVol.toLocaleString()}</div><div class="stat-lbl">Last Vol</div></div>
       </div>`;
       html += `<button class="big-btn" onclick="startSession()" ${state.players.length < 2 ? 'disabled' : ''}><span style="font-size:20px">♦</span><span>Start New Session</span></button>`;
       if (state.players.length < 2) html += `<div style="color:#555;font-size:12px;text-align:center;margin-top:8px" class="mono">Need at least 2 players</div>`;
@@ -248,7 +249,7 @@ function render() {
       if (state.sessions.length > 0) {
         html += `<div style="margin-top:24px"><div class="sec-head">Recent Sessions</div>`;
         state.sessions.slice(-3).reverse().forEach(s => {
-          html += `<div class="card"><div style="font-size:12px;color:var(--gold)" class="mono">${new Date(s.date).toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'})}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">`;
+          html += `<div class="card" style="position:relative"><button style="position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:6px;border:1px solid #2a1515;color:#c44;font-size:11px;display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer" onclick="deleteSession('${s.id}')">✕</button><div style="font-size:12px;color:var(--gold)" class="mono">${new Date(s.date).toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'})}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">`;
           s.entries.forEach(e => {
             const pnl = (e.cashOut||0) - e.totalIn;
             html += `<span style="font-size:12px" class="${pnlClass(pnl)} mono">${gn(e.playerId)} ${pnlStr(pnl)}</span>`;
@@ -406,7 +407,7 @@ function render() {
       state.sessions.slice().reverse().forEach(s => {
         const dt = s.dealerTip || 0;
         const rk = s.rake || 0;
-        html += `<div class="card"><div style="font-size:12px;color:var(--gold);margin-bottom:8px" class="mono">${new Date(s.date).toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric',year:'numeric'})} <span style="color:var(--dim2);margin-left:8px">$${s.entries.reduce((t, e) => t + e.totalIn, 0)}</span></div>`;
+        html += `<div class="card" style="position:relative"><button style="position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:6px;border:1px solid #2a1515;color:#c44;font-size:11px;display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer" onclick="deleteSession('${s.id}')">✕</button><div style="font-size:12px;color:var(--gold);margin-bottom:8px" class="mono">${new Date(s.date).toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric',year:'numeric'})} <span style="color:var(--dim2);margin-left:8px">$${s.entries.reduce((t, e) => t + e.totalIn, 0)}</span></div>`;
         s.entries.forEach(e => {
           const pnl = (e.cashOut || 0) - e.totalIn;
           html += `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:13px"><span style="color:#888" class="mono">${gn(e.playerId)}</span><span class="${pnlClass(pnl)} mono">${pnlStr(pnl)}</span></div>`;
@@ -486,6 +487,12 @@ function addPlayer() {
 function deletePlayer(id) {
   if (!confirm('Delete ' + gn(id) + '?')) return;
   state.players = state.players.filter(p => p.id !== id);
+  saveState(); render();
+}
+
+function deleteSession(id) {
+  if (!confirm('Delete this session? This will affect leaderboard stats.')) return;
+  state.sessions = state.sessions.filter(s => s.id !== id);
   saveState(); render();
 }
 

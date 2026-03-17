@@ -303,7 +303,7 @@ function render() {
   if (view === 'cashout' && a) {
     html += `<div class="page-title"><span style="color:var(--gold)">♦</span> Cashout & Settle</div>`;
     const left = tblMoney - tblOut;
-    html += `<div class="summary-bar">
+    html += `<div class="summary-bar" id="co-summary">
       <div class="summary-item"><div class="lbl">TABLE</div><div class="val" style="color:var(--gold)">$${tblMoney.toLocaleString()}</div></div>
       <div class="divider"></div>
       <div class="summary-item"><div class="lbl">PAID OUT</div><div class="val" style="color:${tblOut > 0 ? '#86efac' : 'var(--dim)'}">$${tblOut.toLocaleString()}</div></div>
@@ -315,25 +315,12 @@ function render() {
       html += `<div style="color:var(--dim2);text-align:center;padding:40px 0;font-size:13px" class="mono">No players yet. Go to Buy-In first.</div>`;
     } else {
       a.entries.forEach((e, i) => {
-        const stl = getSettlement(e);
         html += `<div class="cashout-row"><div style="display:flex;justify-content:space-between;align-items:center">
           <div><div class="name" style="font-size:16px;font-weight:700">${gn(e.playerId)}</div><div>${e.buyIns.map(b => `<span class="${tagClass(b.method)}">${b.method} $${b.amount}</span>`).join('')}</div></div>
           <div style="font-size:13px;color:#888" class="mono">In: $${e.totalIn}</div>
         </div>`;
-        html += `<div class="cashout-input"><label>CASHOUT</label><div class="wrap"><span class="dollar">$</span><input type="number" inputmode="numeric" placeholder="0" value="${e.cashOut !== null && e.cashOut !== undefined ? e.cashOut : ''}" onchange="setCashOut('${e.playerId}',this.value)" oninput="setCashOut('${e.playerId}',this.value)"></div></div>`;
-
-        if (stl) {
-          const cls = stl.netOwed > 0 ? 'settle-owe' : stl.netOwed < 0 ? 'settle-owed' : 'settle-even';
-          html += `<div class="settle-box ${cls}">`;
-          html += `<div style="font-size:12px;color:#888" class="mono">P&L: <span class="${pnlClass(stl.pnl)}">${pnlStr(stl.pnl)}</span></div>`;
-          html += `<div style="font-size:14px;font-weight:600;margin-top:6px">`;
-          if (stl.netOwed > 0) html += `<span style="color:var(--orange)">🔸 ${gn(e.playerId)} owes you $${stl.netOwed.toFixed(0)}</span>`;
-          else if (stl.netOwed < 0) html += `<span style="color:var(--green)">🔹 You owe ${gn(e.playerId)} $${Math.abs(stl.netOwed).toFixed(0)}</span>`;
-          else html += `<span style="color:#888">✓ All settled</span>`;
-          html += `</div>`;
-          if (stl.creditIn > 0) html += `<div style="font-size:11px;color:#777;margin-top:4px" class="mono">(credit: $${stl.creditIn})</div>`;
-          html += `</div>`;
-        }
+        html += `<div class="cashout-input"><label>CASHOUT</label><div class="wrap"><span class="dollar">$</span><input type="number" inputmode="numeric" placeholder="0" value="${e.cashOut !== null && e.cashOut !== undefined ? e.cashOut : ''}" oninput="setCashOut('${e.playerId}',this.value)"></div></div>`;
+        html += `<div id="settle-${e.playerId}">${renderSettlement(e)}</div>`;
         html += `</div>`;
       });
     }
@@ -503,11 +490,45 @@ function addBuyIn() {
   render();
 }
 
+function renderSettlement(e) {
+  const stl = getSettlement(e);
+  if (!stl) return '';
+  const cls = stl.netOwed > 0 ? 'settle-owe' : stl.netOwed < 0 ? 'settle-owed' : 'settle-even';
+  let h = `<div class="settle-box ${cls}">`;
+  h += `<div style="font-size:12px;color:#888" class="mono">P&L: <span class="${pnlClass(stl.pnl)}">${pnlStr(stl.pnl)}</span></div>`;
+  h += `<div style="font-size:14px;font-weight:600;margin-top:6px">`;
+  if (stl.netOwed > 0) h += `<span style="color:var(--orange)">🔸 ${gn(e.playerId)} owes you $${stl.netOwed.toFixed(0)}</span>`;
+  else if (stl.netOwed < 0) h += `<span style="color:var(--green)">🔹 You owe ${gn(e.playerId)} $${Math.abs(stl.netOwed).toFixed(0)}</span>`;
+  else h += `<span style="color:#888">✓ All settled</span>`;
+  h += `</div>`;
+  if (stl.creditIn > 0) h += `<div style="font-size:11px;color:#777;margin-top:4px" class="mono">(credit: $${stl.creditIn})</div>`;
+  h += `</div>`;
+  return h;
+}
+
 function setCashOut(pid, val) {
   if (!state.active) return;
   const e = state.active.entries.find(x => x.playerId === pid);
-  if (e) { e.cashOut = parseFloat(val) || 0; saveState(); }
-  // Don't re-render here to keep focus on input — just save
+  if (e) {
+    e.cashOut = val === '' ? null : (parseFloat(val) || 0);
+    saveState();
+    // Update settlement box for this player
+    const settleDiv = document.getElementById('settle-' + pid);
+    if (settleDiv) settleDiv.innerHTML = renderSettlement(e);
+    // Update summary bar
+    const sumDiv = document.getElementById('co-summary');
+    if (sumDiv) {
+      const tblMoney = state.active.entries.reduce((s, x) => s + x.totalIn, 0);
+      const tblOut = state.active.entries.reduce((s, x) => s + (x.cashOut || 0), 0);
+      const left = tblMoney - tblOut;
+      sumDiv.innerHTML = `
+        <div class="summary-item"><div class="lbl">TABLE</div><div class="val" style="color:var(--gold)">$${tblMoney.toLocaleString()}</div></div>
+        <div class="divider"></div>
+        <div class="summary-item"><div class="lbl">PAID OUT</div><div class="val" style="color:${tblOut > 0 ? '#86efac' : 'var(--dim)'}">$${tblOut.toLocaleString()}</div></div>
+        <div class="divider"></div>
+        <div class="summary-item"><div class="lbl">LEFT</div><div class="val" style="color:${left > 0 ? '#fbbf24' : 'var(--green)'}">$${left.toLocaleString()}</div></div>`;
+    }
+  }
 }
 
 function endSession() {

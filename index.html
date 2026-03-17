@@ -249,7 +249,9 @@ function render() {
       if (state.sessions.length > 0) {
         html += `<div style="margin-top:24px"><div class="sec-head">Recent Sessions</div>`;
         state.sessions.slice(-3).reverse().forEach(s => {
-          html += `<div class="card" style="position:relative"><button style="position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:6px;border:1px solid #2a1515;color:#c44;font-size:11px;display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer" onclick="deleteSession('${s.id}')">✕</button><div style="font-size:12px;color:var(--gold)" class="mono">${new Date(s.date).toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'})}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">`;
+          html += `<div class="card" style="position:relative"><div style="position:absolute;top:10px;right:10px;display:flex;gap:4px"><button style="width:24px;height:24px;border-radius:6px;border:1px solid #1e2830;color:var(--gold);font-size:11px;display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer" onclick="generateShareCard(state.sessions.find(x=>x.id==='${s.id}'))">📤</button><button style="width:24px;height:24px;border-radius:6px;border:1px solid #2a1515;color:#c44;font-size:11px;display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer" onclick="deleteSession('${s.id}')">✕</button></div><div style="font-size:12px;color:var(--gold)" class="mono">${new Date(s.date).toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'})}</div>`;
+          if (s.note) html += `<div style="font-size:11px;color:#888;margin-top:2px;font-style:italic">"${s.note}"</div>`;
+          html += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">`;
           s.entries.forEach(e => {
             const pnl = (e.cashOut||0) - e.totalIn;
             html += `<span style="font-size:12px" class="${pnlClass(pnl)} mono">${gn(e.playerId)} ${pnlStr(pnl)}</span>`;
@@ -266,7 +268,7 @@ function render() {
       if (a.entries.length > 0) {
         html += `<div style="margin-top:20px"><div class="sec-head">At The Table</div>`;
         a.entries.forEach(e => {
-          html += `<div class="row"><div><div class="name">${gn(e.playerId)}</div><div>${e.buyIns.map(b => `<span class="${tagClass(b.method)}">${b.method} $${b.amount}</span>`).join('')}</div></div>
+          html += `<div class="row"><div><div style="display:flex;align-items:center;gap:8px"><div class="name">${gn(e.playerId)}</div>${e.buyIns.length > 1 ? `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(201,162,39,0.12);color:var(--gold);font-family:'Courier New',monospace;font-weight:600">${e.buyIns.length}x</span>` : ''}</div><div>${e.buyIns.map(b => `<span class="${tagClass(b.method)}">${b.method} $${b.amount}</span>`).join('')}</div></div>
           <div style="text-align:right"><div style="font-size:18px;font-weight:700;color:var(--gold)" class="mono">$${e.totalIn}</div>${e.cashOut !== null ? `<div style="font-size:11px;color:var(--dim)" class="mono">out: $${e.cashOut}</div>` : ''}</div></div>`;
         });
         html += `</div>`;
@@ -278,6 +280,10 @@ function render() {
   // ═══ BUY-IN ═══
   if (view === 'buyin' && a) {
     html += `<div class="page-title"><span style="color:var(--gold)">♣</span> Register Buy-In</div>`;
+
+    // Session note
+    html += `<div class="form-group"><label class="form-label">📝 Session Note</label><input id="session-note" placeholder="e.g. At Tirth's place, Tournament night..." value="${(a.note || '').replace(/"/g,'&quot;')}" oninput="setSessionNote(this.value)"></div>`;
+
     html += `<div class="form-group"><label class="form-label">Player</label><select id="bi-player"><option value="">Select player...</option>`;
     state.players.forEach(p => { html += `<option value="${p.id}">${p.name}</option>` });
     html += `</select></div>`;
@@ -293,7 +299,8 @@ function render() {
     if (a.entries.length > 0) {
       html += `<div style="margin-top:28px"><div class="sec-head">Session Buy-Ins</div>`;
       a.entries.forEach(e => {
-        html += `<div class="row"><div><div class="name" style="font-size:14px">${gn(e.playerId)}</div><div>${e.buyIns.map(b => `<span class="${tagClass(b.method)}">${b.method} $${b.amount}</span>`).join('')}</div></div>
+        const rebuyCount = e.buyIns.length;
+        html += `<div class="row"><div><div style="display:flex;align-items:center;gap:8px"><div class="name" style="font-size:14px">${gn(e.playerId)}</div>${rebuyCount > 1 ? `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(201,162,39,0.12);color:var(--gold);font-family:'Courier New',monospace;font-weight:600">${rebuyCount}x</span>` : ''}</div><div>${e.buyIns.map(b => `<span class="${tagClass(b.method)}">${b.method} $${b.amount}</span>`).join('')}</div></div>
         <div style="font-size:18px;font-weight:700;color:var(--gold)" class="mono">$${e.totalIn}</div></div>`;
       });
       html += `</div>`;
@@ -407,10 +414,12 @@ function render() {
       state.sessions.slice().reverse().forEach(s => {
         const dt = s.dealerTip || 0;
         const rk = s.rake || 0;
-        html += `<div class="card" style="position:relative"><button style="position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:6px;border:1px solid #2a1515;color:#c44;font-size:11px;display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer" onclick="deleteSession('${s.id}')">✕</button><div style="font-size:12px;color:var(--gold);margin-bottom:8px" class="mono">${new Date(s.date).toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric',year:'numeric'})} <span style="color:var(--dim2);margin-left:8px">$${s.entries.reduce((t, e) => t + e.totalIn, 0)}</span></div>`;
+        html += `<div class="card" style="position:relative"><div style="position:absolute;top:10px;right:10px;display:flex;gap:4px"><button style="width:24px;height:24px;border-radius:6px;border:1px solid #1e2830;color:var(--gold);font-size:11px;display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer" onclick="generateShareCard(state.sessions.find(x=>x.id==='${s.id}'))">📤</button><button style="width:24px;height:24px;border-radius:6px;border:1px solid #2a1515;color:#c44;font-size:11px;display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer" onclick="deleteSession('${s.id}')">✕</button></div><div style="font-size:12px;color:var(--gold);margin-bottom:4px" class="mono">${new Date(s.date).toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric',year:'numeric'})} <span style="color:var(--dim2);margin-left:8px">$${s.entries.reduce((t, e) => t + e.totalIn, 0)}</span></div>`;
+        if (s.note) html += `<div style="font-size:11px;color:#888;margin-bottom:6px;font-style:italic">"${s.note}"</div>`;
         s.entries.forEach(e => {
           const pnl = (e.cashOut || 0) - e.totalIn;
-          html += `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:13px"><span style="color:#888" class="mono">${gn(e.playerId)}</span><span class="${pnlClass(pnl)} mono">${pnlStr(pnl)}</span></div>`;
+          const rebuys = e.buyIns.length;
+          html += `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:13px"><span style="color:#888" class="mono">${gn(e.playerId)}${rebuys > 1 ? ' <span style="font-size:10px;color:var(--gold)">(' + rebuys + 'x)</span>' : ''}</span><span class="${pnlClass(pnl)} mono">${pnlStr(pnl)}</span></div>`;
         });
         if (dt > 0 || rk > 0) {
           html += `<div style="display:flex;gap:12px;margin-top:6px;padding-top:6px;border-top:1px solid #1a1e28">`;
@@ -497,7 +506,7 @@ function deleteSession(id) {
 }
 
 function startSession() {
-  state.active = { id: Date.now().toString(), date: new Date().toISOString(), entries: [], dealerTip: 0, rake: 0 };
+  state.active = { id: Date.now().toString(), date: new Date().toISOString(), entries: [], dealerTip: 0, rake: 0, note: '' };
   saveState(); view = 'buyin'; showToast("Let's deal!"); render();
 }
 
@@ -581,6 +590,115 @@ function setCashOut(pid, val) {
   }
 }
 
+function setSessionNote(val) {
+  if (!state.active) return;
+  state.active.note = val;
+  saveState();
+}
+
+function generateShareCard(session) {
+  const s = session || state.sessions[state.sessions.length - 1];
+  if (!s) { showToast('No session to share', 'error'); return; }
+
+  const date = new Date(s.date).toLocaleDateString('en-CA', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+  const totalPot = s.entries.reduce((t, e) => t + e.totalIn, 0);
+  const dt = s.dealerTip || 0;
+  const rk = s.rake || 0;
+  const note = s.note || '';
+
+  const sorted = s.entries.slice().sort((a, b) => (b.cashOut - b.totalIn) - (a.cashOut - a.totalIn));
+
+  let rows = '';
+  sorted.forEach((e, i) => {
+    const pnl = (e.cashOut || 0) - e.totalIn;
+    const rebuys = e.buyIns.length;
+    const pnlColor = pnl > 0 ? '#4ade80' : pnl < 0 ? '#f87171' : '#888';
+    const medal = i === 0 ? '👑 ' : '';
+    rows += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #1a1e28">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="color:#888;font-size:12px;width:20px">${medal}${i + 1}.</span>
+        <span style="color:#e8e0d4;font-size:14px;font-weight:600">${gn(e.playerId)}</span>
+        ${rebuys > 1 ? `<span style="font-size:10px;padding:1px 5px;border-radius:3px;background:rgba(201,162,39,0.12);color:#c9a227">${rebuys}x</span>` : ''}
+      </div>
+      <span style="font-size:16px;font-weight:700;color:${pnlColor}">${pnl >= 0 ? '+' : ''}$${pnl}</span>
+    </div>`;
+  });
+
+  let extras = '';
+  if (dt > 0 || rk > 0) {
+    extras = `<div style="display:flex;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid #1a1e28">`;
+    if (dt > 0) extras += `<span style="font-size:11px;color:#fb923c">🎰 Dealer: $${dt}</span>`;
+    if (rk > 0) extras += `<span style="font-size:11px;color:#f87171">🏦 Rake: $${rk}</span>`;
+    extras += `</div>`;
+  }
+
+  const cardHTML = `
+    <div id="share-card" style="background:#0a0e14;border:1px solid #252010;border-radius:16px;padding:24px;max-width:400px;margin:0 auto;font-family:'Segoe UI',system-ui,sans-serif;color:#e8e0d4">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#c9a227,#8b6914);display:flex;align-items:center;justify-content:center;font-size:16px;color:#0a0a0a;font-weight:800">♠</div>
+        <div><div style="font-size:12px;font-weight:800;color:#c9a227;letter-spacing:2px">HOME GAME RESULTS</div></div>
+      </div>
+      <div style="font-size:12px;color:#888;margin:8px 0 4px;font-family:'Courier New',monospace">${date}</div>
+      ${note ? `<div style="font-size:12px;color:#c9a227;margin-bottom:8px;font-style:italic">"${note}"</div>` : ''}
+      <div style="font-size:13px;color:#888;margin-bottom:16px;font-family:'Courier New',monospace">Pot: $${totalPot} · ${s.entries.length} players</div>
+      ${rows}
+      ${extras}
+    </div>`;
+
+  // Show in modal with copy/share options
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.style.alignItems = 'center';
+  bg.style.overflow = 'auto';
+  bg.onclick = (e) => { if (e.target === bg) bg.remove() };
+  bg.innerHTML = `<div style="background:#12151c;border:1px solid #1e2230;border-radius:12px;padding:20px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto">
+    <div style="font-size:16px;font-weight:700;color:#e8e0d4;margin-bottom:16px">📤 Share Session Results</div>
+    ${cardHTML}
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="gold-btn" style="flex:1" onclick="copyShareText('${s.id}')">📋 Copy Text</button>
+      <button style="flex:1;padding:10px;background:transparent;border:1px solid #222;border-radius:8px;color:#888;font-size:13px;cursor:pointer" onclick="this.closest('.modal-bg').remove()">Close</button>
+    </div>
+  </div>`;
+  document.body.appendChild(bg);
+}
+
+function copyShareText(sessionId) {
+  const s = state.sessions.find(x => x.id === sessionId) || state.sessions[state.sessions.length - 1];
+  if (!s) return;
+
+  const date = new Date(s.date).toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+  const totalPot = s.entries.reduce((t, e) => t + e.totalIn, 0);
+  const note = s.note || '';
+  const dt = s.dealerTip || 0;
+  const rk = s.rake || 0;
+
+  const sorted = s.entries.slice().sort((a, b) => (b.cashOut - b.totalIn) - (a.cashOut - a.totalIn));
+
+  let text = `♠ HOME GAME RESULTS\n${date}`;
+  if (note) text += `\n"${note}"`;
+  text += `\nPot: $${totalPot} · ${s.entries.length} players\n${'─'.repeat(25)}\n`;
+
+  sorted.forEach((e, i) => {
+    const pnl = (e.cashOut || 0) - e.totalIn;
+    const rebuys = e.buyIns.length;
+    const medal = i === 0 ? '👑 ' : '   ';
+    text += `${medal}${gn(e.playerId)}: ${pnl >= 0 ? '+' : ''}$${pnl}${rebuys > 1 ? ' (' + rebuys + 'x buy-in)' : ''}\n`;
+  });
+
+  if (dt > 0 || rk > 0) {
+    text += `${'─'.repeat(25)}\n`;
+    if (dt > 0) text += `🎰 Dealer Tip: $${dt}\n`;
+    if (rk > 0) text += `🏦 Rake: $${rk}\n`;
+  }
+
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('Copied! Paste in group chat')).catch(() => {});
+  }
+  if (navigator.share) {
+    navigator.share({ text }).catch(() => {});
+  }
+}
+
 function endSession() {
   if (!state.active) return;
   const uf = state.active.entries.filter(e => e.cashOut === null || e.cashOut === undefined);
@@ -588,9 +706,12 @@ function endSession() {
     if (!confirm(uf.length + ' player(s) no cashout. End anyway?')) return;
     uf.forEach(e => e.cashOut = 0);
   }
-  state.sessions.push({...state.active});
+  const saved = {...state.active};
+  state.sessions.push(saved);
   state.active = null;
   saveState(); view = 'home'; showToast('Session saved ✓'); render();
+  // Show share card after a brief delay
+  setTimeout(() => generateShareCard(saved), 500);
 }
 
 function doImport() {
